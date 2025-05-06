@@ -1,152 +1,104 @@
-# Rust Tree-sitter
+# Mathematics Research References
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Documentation](https://img.shields.io/badge/docs-reference-blue?style=flat-square)](./documentation.md)
 
-[![crates.io badge]][crates.io]
-
-[crates.io]: https://crates.io/crates/tree-sitter
-[crates.io badge]: https://img.shields.io/crates/v/tree-sitter.svg?color=%23B48723
-
-Rust bindings to the [Tree-sitter][] parsing library.
+A tree-structured repository for organizing mathematical research references, inspired by Tree-sitter's hierarchical parsing approach.
 
 ## Basic Usage
 
-First, create a parser:
+First, navigate the repository structure:
 
-```rust
-use tree_sitter::{InputEdit, Language, Parser, Point};
-
-let mut parser = Parser::new();
+```
+references/
+├── fields/           # References organized by mathematical field
+├── types/            # References organized by document type
+└── docs/             # Documentation and guides
 ```
 
-Then, add a language as a dependency:
+Then, find references by field:
 
-```toml
-[dependencies]
-tree-sitter = "0.24"
-tree-sitter-rust = "0.23"
+```
+fields/
+├── algebraic-geometry.md
+├── category-theory.md
+├── lie-theory.md
+├── symplectic-geometry.md
+└── tqft.md
 ```
 
-To use a language, you assign them to the parser.
+Or browse by document type:
 
-```rust
-parser.set_language(&tree_sitter_rust::LANGUAGE.into()).expect("Error loading Rust grammar");
+```
+types/
+├── books.md
+├── papers.md
+├── notes.md
+└── preprints.md
 ```
 
-Now you can parse source code:
+### Adding References
 
-```rust
-let source_code = "fn test() {}";
-let mut tree = parser.parse(source_code, None).unwrap();
-let root_node = tree.root_node();
+Once you have the structure, you can add your own references:
 
-assert_eq!(root_node.kind(), "source_file");
-assert_eq!(root_node.start_position().column, 0);
-assert_eq!(root_node.end_position().column, 12);
+```markdown
+# Title of Reference
+
+## Metadata
+- **Author(s):** Name(s)
+- **Year:** Publication year
+- **Source:** Journal/Publisher
+- **Tags:** #tag1 #tag2 #tag3
+
+## Description
+Brief description of the reference.
+
+## Key Points
+- Important point 1
+- Important point 2
+- Important point 3
 ```
 
 ### Editing
 
-Once you have a syntax tree, you can update it when your source code changes.
-Passing in the previous edited tree makes `parse` run much more quickly:
+To update an existing reference when new information becomes available:
 
-```rust
-let new_source_code = "fn test(a: u32) {}";
-
-tree.edit(&InputEdit {
-  start_byte: 8,
-  old_end_byte: 8,
-  new_end_byte: 14,
-  start_position: Point::new(0, 8),
-  old_end_position: Point::new(0, 8),
-  new_end_position: Point::new(0, 14),
-});
-
-let new_tree = parser.parse(new_source_code, Some(&tree));
+```markdown
+## Updates
+- **Date:** May 2025
+- **Change:** Added new section on related works
+- **Notes:** This reference has been updated with recent developments in the field
 ```
 
-### Text Input
+### Organization by Field
 
-The source code to parse can be provided either as a string, a slice, a vector,
-or as a function that returns a slice. The text can be encoded as either UTF8 or UTF16:
+The field-based organization allows for quick navigation through mathematical topics:
 
-```rust
-// Store some source code in an array of lines.
-let lines = &[
-    "pub fn foo() {",
-    "  1",
-    "}",
-];
+```markdown
+# Algebraic Geometry References
 
-// Parse the source code using a custom callback. The callback is called
-// with both a byte offset and a row/column offset.
-let tree = parser.parse_with(&mut |_byte: usize, position: Point| -> &[u8] {
-    let row = position.row as usize;
-    let column = position.column as usize;
-    if row < lines.len() {
-        if column < lines[row].as_bytes().len() {
-            &lines[row].as_bytes()[column..]
-        } else {
-            b"\n"
-        }
-    } else {
-        &[]
-    }
-}, None).unwrap();
+## Overview
+Algebraic geometry is the study of geometrical objects defined by polynomial equations.
 
-assert_eq!(
-  tree.root_node().to_sexp(),
-  "(source_file (function_item (visibility_modifier) (identifier) (parameters) (block (number_literal))))"
-);
+## Key Books
+- [Hartshorne - Algebraic Geometry](../types/books.md#algebraic-geometry)
+- [Griffiths & Harris - Principles of Algebraic Geometry](../types/books.md#algebraic-geometry)
+
+## Important Papers
+- [Grothendieck & Dieudonné - Éléments de géométrie algébrique](../types/papers.md#algebraic-geometry)
 ```
-
-## Using WASM Grammar Files
-
-> Requires the feature **wasm** to be enabled.
-
-First, create a parser with a WASM store:
-
-```rust
-use tree_sitter::{wasmtime::Engine, Parser, WasmStore};
-
-let engine = Engine::default();
-let store = WasmStore::new(&engine).unwrap();
-
-let mut parser = Parser::new();
-parser.set_wasm_store(store).unwrap();
-```
-
-Then, load the language from a WASM file:
-
-```rust
-const JAVASCRIPT_GRAMMAR: &[u8] = include_bytes!("path/to/tree-sitter-javascript.wasm");
-
-let mut store = WasmStore::new(&engine).unwrap();
-let javascript = store
-    .load_language("javascript", JAVASCRIPT_GRAMMAR)
-    .unwrap();
-
-// The language may be loaded from a different WasmStore than the one set on
-// the parser but it must use the same underlying WasmEngine.
-parser.set_language(&javascript).unwrap();
-```
-
-Now you can parse source code:
-
-```rust
-let source_code = "let x = 1;";
-let tree = parser.parse(source_code, None).unwrap();
-
-assert_eq!(
-    tree.root_node().to_sexp(),
-    "(program (lexical_declaration (variable_declarator name: (identifier) value: (number))))"
-);
-```
-
-[tree-sitter]: https://github.com/tree-sitter/tree-sitter
 
 ## Features
 
-- **std** - This feature is enabled by default and allows `tree-sitter` to use the standard library.
-  - Error types implement the `std::error:Error` trait.
-  - `regex` performance optimizations are enabled.
-  - The DOT graph methods are enabled.
-- **wasm** - This feature allows `tree-sitter` to be built for Wasm targets using the `wasmtime-c-api` crate.
+- **Hierarchical Organization** - Tree-structured repository similar to how Tree-sitter parses code
+- **Cross-References** - Links between related mathematical concepts and references
+- **Searchable** - Easy to find specific references using GitHub search
+- **Extensible** - Simple to add new mathematical fields and references
+- **Documentation** - Comprehensive guides on how to use and contribute
+
+## Documentation
+
+See [documentation.md](./documentation.md) for full details on the organization system.
+
+## License
+
+This repository is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
