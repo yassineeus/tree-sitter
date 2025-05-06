@@ -1,33 +1,33 @@
 // swift-tools-version: 5.8
-// The swift-tools-version declares the minimum version of Swift required to build this package.
+// This defines the Swift Package Manager configuration for Mathematics Research References
 
 import PackageDescription
 
 let package = Package(
-    name: "TreeSitter",
+    name: "MathReferences",
     products: [
-        // Products define the executables and libraries a package produces, and make them visible to other packages.
+        // Define a library product that makes our references available to other packages
         .library(
-            name: "TreeSitter",
-            targets: ["TreeSitter"]),
+            name: "MathReferences",
+            targets: ["MathReferences"]),
     ],
     targets: [
-        .target(name: "TreeSitter",
-                path: "lib",
+        .target(name: "MathReferences",
+                path: "references",
                 exclude: [
-                        "src/unicode/ICU_SHA",
-                        "src/unicode/README.md",
-                        "src/unicode/LICENSE",
-                        "src/wasm/stdlib-symbols.txt",
-                        "src/lib.c",
+                        "LICENSE",
+                        "README.md",
+                        "documentation.md",
+                        ".gitignore",
                 ],
-                sources: ["src"],
-                publicHeadersPath: "include",
+                sources: ["fields", "types", "notes"],
+                resources: [
+                    .copy("docs")
+                ],
                 cSettings: [
-                        .headerSearchPath("src"),
-                        .define("_POSIX_C_SOURCE", to: "200112L"),
-                        .define("_DEFAULT_SOURCE"),
+                        .headerSearchPath("fields"),
+                        .define("MATH_REFERENCES_VERSION", to: "\"1.0.0\""),
                 ]),
     ],
-    cLanguageStandard: .c11
+    swiftLanguageVersions: [.v5]
 )
