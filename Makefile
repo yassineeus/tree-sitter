@@ -1,128 +1,170 @@
-VERSION := 0.26.0
-DESCRIPTION := An incremental parsing system for programming tools
-HOMEPAGE_URL := https://tree-sitter.github.io/tree-sitter/
+VERSION := 1.0.0
+DESCRIPTION := A tree-structured collection of mathematical research references
+HOMEPAGE_URL := https://github.com/yassineeus/tree-sitter-reference
 
-# install directory layout
+# Install directory layout
 PREFIX ?= /usr/local
-INCLUDEDIR ?= $(PREFIX)/include
-LIBDIR ?= $(PREFIX)/lib
-PCLIBDIR ?= $(LIBDIR)/pkgconfig
+DOCDIR ?= $(PREFIX)/share/doc
+RESOURCEDIR ?= $(PREFIX)/share/math-references
 
-# collect sources
-ifneq ($(AMALGAMATED),1)
-	SRC := $(wildcard lib/src/*.c)
-	# do not double-include amalgamation
-	SRC := $(filter-out lib/src/lib.c,$(SRC))
-else
-	# use amalgamated build
-	SRC := lib/src/lib.c
-endif
-OBJ := $(SRC:.c=.o)
+# Directories
+FIELDSDIR := references/fields
+TYPESDIR := references/types
+DOCSDIR := docs
+NOTESDIR := references/notes
 
-# define default flags, and override to append mandatory flags
-ARFLAGS := rcs
-CFLAGS ?= -O3 -Wall -Wextra -Wshadow -Wpedantic -Werror=incompatible-pointer-types
-override CFLAGS += -std=c11 -fPIC -fvisibility=hidden
-override CFLAGS += -D_POSIX_C_SOURCE=200112L -D_DEFAULT_SOURCE
-override CFLAGS += -Ilib/src -Ilib/src/wasm -Ilib/include
+# Files
+README := README.md
+LICENSE := LICENSE
+DOCUMENTATION := documentation.md
 
-# ABI versioning
-SONAME_MAJOR := $(word 1,$(subst ., ,$(VERSION)))
-SONAME_MINOR := $(word 2,$(subst ., ,$(VERSION)))
+# Define default targets
+all: check-structure create-index
 
-# OS-specific bits
-ifneq ($(findstring darwin,$(shell $(CC) -dumpmachine)),)
-	SOEXT = dylib
-	SOEXTVER_MAJOR = $(SONAME_MAJOR).$(SOEXT)
-	SOEXTVER = $(SONAME_MAJOR).$(SONAME_MINOR).$(SOEXT)
-	LINKSHARED += -dynamiclib -Wl,-install_name,$(LIBDIR)/libtree-sitter.$(SOEXTVER)
-else ifneq ($(findstring mingw32,$(shell $(CC) -dumpmachine)),)
-	SOEXT = dll
-	LINKSHARED += -s -shared -Wl,--out-implib,$(@:dll=lib)
-libtree-sitter.lib: libtree-sitter.$(SOEXT)
-else
-	SOEXT = so
-	SOEXTVER_MAJOR = $(SOEXT).$(SONAME_MAJOR)
-	SOEXTVER = $(SOEXT).$(SONAME_MAJOR).$(SONAME_MINOR)
-	LINKSHARED += -shared -Wl,-soname,libtree-sitter.$(SOEXTVER)
-endif
-ifneq ($(filter $(shell uname),FreeBSD NetBSD DragonFly),)
-	PCLIBDIR := $(PREFIX)/libdata/pkgconfig
-endif
+# Check if all required directories exist
+check-structure:
+	@echo "Checking repository structure..."
+	@test -d $(FIELDSDIR) || mkdir -p $(FIELDSDIR)
+	@test -d $(TYPESDIR) || mkdir -p $(TYPESDIR)
+	@test -d $(DOCSDIR) || mkdir -p $(DOCSDIR)
+	@test -d $(NOTESDIR) || mkdir -p $(NOTESDIR)
+	@echo "Repository structure OK"
 
-all: libtree-sitter.a libtree-sitter.$(SOEXT) tree-sitter.pc
+# Create index files for each directory
+create-index: index-fields index-types index-docs
 
-libtree-sitter.a: $(OBJ)
-	$(AR) $(ARFLAGS) $@ $^
+# Generate index for fields
+index-fields:
+	@echo "Creating fields index..."
+	@echo "# Mathematical Fields Index\n" > $(FIELDSDIR)/index.md
+	@echo "List of all mathematical fields covered in this reference collection:\n" >> $(FIELDSDIR)/index.md
+	@for file in $$(find $(FIELDSDIR) -type f -name "*.md" ! -name "index.md"); do \
+		name=$$(basename $$file .md); \
+		title=$$(grep -m 1 "^# " $$file | sed 's/^# //'); \
+		if [ -n "$$title" ]; then \
+			echo "- [$$title]($$name.md)" >> $(FIELDSDIR)/index.md; \
+		else \
+			echo "- [$$name]($$name.md)" >> $(FIELDSDIR)/index.md; \
+		fi; \
+	done
+	@echo "Fields index created"
 
-libtree-sitter.$(SOEXT): $(OBJ)
-	$(CC) $(LDFLAGS) $(LINKSHARED) $^ $(LDLIBS) -o $@
-ifneq ($(STRIP),)
-	$(STRIP) $@
-endif
+# Generate index for types
+index-types:
+	@echo "Creating types index..."
+	@echo "# Reference Types Index\n" > $(TYPESDIR)/index.md
+	@echo "List of all reference types available in this collection:\n" >> $(TYPESDIR)/index.md
+	@for file in $$(find $(TYPESDIR) -type f -name "*.md" ! -name "index.md"); do \
+		name=$$(basename $$file .md); \
+		title=$$(grep -m 1 "^# " $$file | sed 's/^# //'); \
+		if [ -n "$$title" ]; then \
+			echo "- [$$title]($$name.md)" >> $(TYPESDIR)/index.md; \
+		else \
+			echo "- [$$name]($$name.md)" >> $(TYPESDIR)/index.md; \
+		fi; \
+	done
+	@echo "Types index created"
 
-tree-sitter.pc: lib/tree-sitter.pc.in
-	sed -e 's|@PROJECT_VERSION@|$(VERSION)|' \
-		-e 's|@CMAKE_INSTALL_LIBDIR@|$(LIBDIR:$(PREFIX)/%=%)|' \
-		-e 's|@CMAKE_INSTALL_INCLUDEDIR@|$(INCLUDEDIR:$(PREFIX)/%=%)|' \
-		-e 's|@PROJECT_DESCRIPTION@|$(DESCRIPTION)|' \
-		-e 's|@PROJECT_HOMEPAGE_URL@|$(HOMEPAGE_URL)|' \
-		-e 's|@CMAKE_INSTALL_PREFIX@|$(PREFIX)|' $< > $@
+# Generate index for documentation
+index-docs:
+	@echo "Creating documentation index..."
+	@echo "# Documentation Index\n" > $(DOCSDIR)/index.md
+	@echo "List of all documentation guides:\n" >> $(DOCSDIR)/index.md
+	@for file in $$(find $(DOCSDIR) -type f -name "*.md" ! -name "index.md"); do \
+		name=$$(basename $$file .md); \
+		title=$$(grep -m 1 "^# " $$file | sed 's/^# //'); \
+		if [ -n "$$title" ]; then \
+			echo "- [$$title]($$name.md)" >> $(DOCSDIR)/index.md; \
+		else \
+			echo "- [$$name]($$name.md)" >> $(DOCSDIR)/index.md; \
+		fi; \
+	done
+	@echo "Documentation index created"
 
-clean:
-	$(RM) $(OBJ) tree-sitter.pc libtree-sitter.a libtree-sitter.$(SOEXT) libtree-stitter.lib
+# Create a new reference entry
+new-reference:
+	@read -p "Reference type (book/paper/note): " type; \
+	read -p "Field: " field; \
+	read -p "Title: " title; \
+	read -p "Author: " author; \
+	read -p "Year: " year; \
+	slug=$$(echo $$title | tr '[:upper:]' '[:lower:]' | tr ' ' '-'); \
+	filename=""; \
+	if [ "$$type" = "book" ]; then \
+		filename="$(TYPESDIR)/books/$$slug.md"; \
+	elif [ "$$type" = "paper" ]; then \
+		filename="$(TYPESDIR)/papers/$$slug.md"; \
+	elif [ "$$type" = "note" ]; then \
+		filename="$(NOTESDIR)/$$slug.md"; \
+	else \
+		echo "Unknown type. Exiting."; \
+		exit 1; \
+	fi; \
+	mkdir -p $$(dirname $$filename); \
+	echo "# $$title\n" > $$filename; \
+	echo "## Metadata" >> $$filename; \
+	echo "- **Author(s):** $$author" >> $$filename; \
+	echo "- **Year:** $$year" >> $$filename; \
+	echo "- **Field:** $$field" >> $$filename; \
+	echo "- **Tags:** #$$field #$$type" >> $$filename; \
+	echo "\n## Description\n" >> $$filename; \
+	echo "Add a brief description here.\n" >> $$filename; \
+	echo "## Key Points\n" >> $$filename; \
+	echo "- Important point 1" >> $$filename; \
+	echo "- Important point 2" >> $$filename; \
+	echo "- Important point 3\n" >> $$filename; \
+	echo "## Notes\n" >> $$filename; \
+	echo "Your personal notes about this reference.\n" >> $$filename; \
+	echo "Created new reference at $$filename"
 
-install: all
-	install -d '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter '$(DESTDIR)$(PCLIBDIR)' '$(DESTDIR)$(LIBDIR)'
-	install -m644 lib/include/tree_sitter/api.h '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter/api.h
-	install -m644 tree-sitter.pc '$(DESTDIR)$(PCLIBDIR)'/tree-sitter.pc
-	install -m644 libtree-sitter.a '$(DESTDIR)$(LIBDIR)'/libtree-sitter.a
-	install -m755 libtree-sitter.$(SOEXT) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXTVER)
-	ln -sf libtree-sitter.$(SOEXTVER) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXTVER_MAJOR)
-	ln -sf libtree-sitter.$(SOEXTVER_MAJOR) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXT)
+# Install the references to the system
+install:
+	@echo "Installing mathematics references to $(RESOURCEDIR)..."
+	install -d '$(DESTDIR)$(RESOURCEDIR)'
+	install -d '$(DESTDIR)$(DOCDIR)/math-references'
+	cp -r $(FIELDSDIR) '$(DESTDIR)$(RESOURCEDIR)'/
+	cp -r $(TYPESDIR) '$(DESTDIR)$(RESOURCEDIR)'/
+	cp -r $(DOCSDIR) '$(DESTDIR)$(DOCDIR)/math-references/'
+	cp -r $(NOTESDIR) '$(DESTDIR)$(RESOURCEDIR)'/
+	install -m644 $(README) '$(DESTDIR)$(DOCDIR)/math-references/'
+	install -m644 $(LICENSE) '$(DESTDIR)$(DOCDIR)/math-references/'
+	install -m644 $(DOCUMENTATION) '$(DESTDIR)$(DOCDIR)/math-references/'
+	@echo "Installation complete"
 
+# Uninstall from the system
 uninstall:
-	$(RM) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.a \
-		'$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXTVER) \
-		'$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXTVER_MAJOR) \
-		'$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXT) \
-		'$(DESTDIR)$(INCLUDEDIR)'/tree_sitter/api.h \
-		'$(DESTDIR)$(PCLIBDIR)'/tree-sitter.pc
+	$(RM) -r '$(DESTDIR)$(RESOURCEDIR)'
+	$(RM) -r '$(DESTDIR)$(DOCDIR)/math-references'
 
-.PHONY: all install uninstall clean
+# Clean generated files
+clean:
+	$(RM) $(FIELDSDIR)/index.md
+	$(RM) $(TYPESDIR)/index.md
+	$(RM) $(DOCSDIR)/index.md
 
+# Development targets
+validate:
+	@echo "Validating Markdown files..."
+	@for file in $$(find . -type f -name "*.md"); do \
+		if ! grep -q "^# " $$file; then \
+			echo "WARNING: $$file has no title (# Title)"; \
+		fi; \
+	done
+	@echo "Validation complete"
 
-##### Dev targets #####
+# Check for broken links
+check-links:
+	@echo "Checking for broken internal links..."
+	@for file in $$(find . -type f -name "*.md"); do \
+		for link in $$(grep -o "\[.*\]([^)]*)" $$file | sed 's/.*(\(.*\))/\1/'); do \
+			if [[ $$link != http* ]] && [[ $$link != www* ]]; then \
+				target=$$(echo $$link | cut -d'#' -f1); \
+				if [[ -n $$target ]] && [[ ! -f $$target ]] && [[ ! -f $$(dirname $$file)/$$target ]]; then \
+					echo "Broken link in $$file: $$link"; \
+				fi; \
+			fi; \
+		done; \
+	done
+	@echo "Link check complete"
 
-test:
-	cargo xtask fetch-fixtures
-	cargo xtask generate-fixtures
-	cargo xtask test
-
-test-wasm:
-	cargo xtask generate-fixtures --wasm
-	cargo xtask test-wasm
-
-lint:
-	cargo update --workspace --locked --quiet
-	cargo check --workspace --all-targets
-	cargo +nightly fmt --all --check
-	cargo +stable clippy --workspace --all-targets -- -D warnings
-
-lint-nightly:
-	cargo update --workspace --locked --quiet
-	cargo check --workspace --all-targets
-	cargo +nightly fmt --all --check
-	cargo +nightly clippy --workspace --all-targets -- -D warnings
-
-lint-web:
-	npm --prefix lib/binding_web ci
-	npm --prefix lib/binding_web run lint
-
-format:
-	cargo +nightly fmt --all
-
-changelog:
-	@git-cliff --config .github/cliff.toml --prepend CHANGELOG.md --latest --github-token $(shell gh auth token)
-
-.PHONY: test test-wasm lint format changelog
+.PHONY: all check-structure create-index index-fields index-types index-docs new-reference install uninstall clean validate check-links
