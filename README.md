@@ -1,21 +1,34 @@
-# tree-sitter
+# Research References Index
 
-[![DOI](https://zenodo.org/badge/14164618.svg)](https://zenodo.org/badge/latestdoi/14164618)
-[![discord][discord]](https://discord.gg/w7nTvsVJhm)
-[![matrix][matrix]](https://matrix.to/#/#tree-sitter-chat:matrix.org)
+[![Documentation](https://img.shields.io/badge/docs-reference-blue)](https://tree-sitter.github.io)
+[![Community](https://img.shields.io/badge/community-forum-green)](https://discord.gg/w7nTvsVJhm)
+[![Matrix](https://img.shields.io/matrix/tree-sitter-chat%3Amatrix.org?logo=matrix&label=matrix)](https://matrix.to/#/#tree-sitter-chat:matrix.org)
 
-Tree-sitter is a parser generator tool and an incremental parsing library. It can build a concrete syntax tree for a source file and efficiently update the syntax tree as the source file is edited. Tree-sitter aims to be:
+This is my personal research reference collection organized by field and document type. I use this repository to track important papers, books, and notes in mathematics and theoretical physics.
 
-- **General** enough to parse any programming language
-- **Fast** enough to parse on every keystroke in a text editor
-- **Robust** enough to provide useful results even in the presence of syntax errors
-- **Dependency-free** so that the runtime library (which is written in pure C) can be embedded in any application
+## By Field
+- [TQFTS2025](TQFTS2025.md)
+- [Algebraic Geometry](algebraic-geometry.md)
+- [Algebraic Stacks](algebraic-stacks.md)
+- [Lie Theory](lie-theory.md)
+- [Symplectic Geometry](symplectic-geometry.md)
+- [TQFT](tqft.md)
+- [Category Theory](category-theory.md)
+
+## By Type
+- [Books](books.md)
+- [Research Papers](papers.md)
+- [Notes](notes.md)
+- [Preprints](preprints.md)
+
+## Features
+- **Comprehensive** collection of mathematics and physics references
+- **Organized** by both field and document type
+- **Searchable** via standard GitHub search
+- **Personal notes** included with most references
+- **Regularly updated** with new research materials
 
 ## Links
-- [Documentation](https://tree-sitter.github.io)
-- [Rust binding](lib/binding_rust/README.md)
-- [WASM binding](lib/binding_web/README.md)
-- [Command-line interface](cli/README.md)
-
-[discord]: https://img.shields.io/discord/1063097320771698699?logo=discord&label=discord
-[matrix]: https://img.shields.io/matrix/tree-sitter-chat%3Amatrix.org?logo=matrix&label=matrix
+- [My Notes](notes.md)
+- [Citation Format](citation-format.md)
+- [Related Resources](resources.md)
